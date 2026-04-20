@@ -1,7 +1,28 @@
 import { AUTH_TOKEN_KEY } from "./auth";
 
+const LOCAL_BACKEND_ORIGIN = "http://localhost:8083";
 const RAW_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ?? "";
-const API_ORIGIN = RAW_API_BASE_URL.replace(/\/$/, "");
+
+function resolveApiOrigin() {
+  const configuredOrigin = RAW_API_BASE_URL.replace(/\/$/, "");
+
+  if (typeof window === "undefined") {
+    return configuredOrigin;
+  }
+
+  const currentOrigin = window.location.origin.replace(/\/$/, "");
+  const isHostedFrontend = /^https:\/\/.+\.vercel\.app$/i.test(currentOrigin);
+  const pointsToHostedFrontend = /^https:\/\/.+\.vercel\.app$/i.test(configuredOrigin);
+
+  // Temporary fallback for the hosted frontend until the backend gets its own public URL.
+  if (isHostedFrontend && (!configuredOrigin || configuredOrigin === currentOrigin || pointsToHostedFrontend)) {
+    return LOCAL_BACKEND_ORIGIN;
+  }
+
+  return configuredOrigin;
+}
+
+const API_ORIGIN = resolveApiOrigin();
 const API_BASE = `${API_ORIGIN}/api/v1`;
 
 export interface ApiErrorShape {
